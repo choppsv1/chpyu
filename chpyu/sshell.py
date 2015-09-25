@@ -22,7 +22,7 @@ import socket
 import subprocess
 import threading
 import traceback
-from nose.tools import set_trace
+# from nose.tools import set_trace
 
 __author__ = 'Christian Hopps'
 __version__ = '1.0'
