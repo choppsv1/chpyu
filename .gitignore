@@ -1,0 +1,15 @@
+.DS_Store
+.coverage*
+.python-version
+.lint-*
+.projectile
+.pyenv
+.tox
+.idea
+*.egg-info/
+*.pyc
+*.so
+EGG-INFO/
+GPATH
+GRTAGS
+GTAGS
