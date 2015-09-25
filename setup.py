@@ -14,7 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 from setuptools import setup
 
 # with open('requirements.txt') as f:
@@ -26,7 +25,7 @@ required = [
 ]
 
 setup (name='chpyu',
-       version='1.0.1',
+       version='1.0.2',
        description='chopps python util library',
        author='Christian E. Hopps',
        author_email='chopps@gmail.com',
