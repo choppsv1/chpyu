@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
 import logbook
+# import logging
 import os
 import socket
 import subprocess
@@ -29,7 +30,6 @@ __author__ = 'Christian Hopps'
 __version__ = '1.0'
 __docformat__ = "restructuredtext en"
 
-
 class CalledProcessError (subprocess.CalledProcessError):
     pass
 
@@ -39,7 +39,10 @@ MAXSSHBUF = 16 * 1024
 MAXCHANNELS = 8
 
 logger = logbook.Logger(__name__)
-# logger = getLogger(__name__)
+# logger = logging.getLogger(__name__)
+
+# Used by travis-ci testing
+private_key = None
 
 
 def read_to_eof (recvmethod):
@@ -199,6 +202,9 @@ class SSHConnection (object):
 
                 if not sshsock.is_authenticated():
                     ssh_keys = ssh.Agent().get_keys()
+                    if private_key:
+                        # Used by travis-ci
+                        ssh_keys += ( private_key, )
                     lastkey = len(ssh_keys) - 1
                     for idx, ssh_key in enumerate(ssh_keys):
                         if sshsock.is_authenticated():
@@ -540,7 +546,9 @@ class ShellCommand (object):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE,
                                     close_fds=True)
-            self.output, self.error_output = pipe.communicate()
+            output, error_output = pipe.communicate()
+            self.output = output.decode('utf-8')
+            self.error_output = error_output.decode('utf-8')
             self.exit_code = pipe.returncode
         except OSError:
             self.exit_code = 1
@@ -656,17 +664,38 @@ class Host (object):
 
 
 def setup_module (unused):
+    global private_key
+    print("Setup called.")
+    if os.environ['USER'] != "travis":
+        return
+
+
+    print("Executing under Travis-CI")
     ssh_dir = "{}/.ssh".format(os.environ['HOME'])
-    if not os.path.exists(ssh_dir):
+    priv_filename = os.path.join(ssh_dir, "id_rsa")
+    if os.path.exists(priv_filename):
+        logger.error("Found private keyfile")
+        print("Found private keyfile")
+        return
+    else:
+        logger.error("Creating ssh dir " + ssh_dir)
+        print("Creating ssh dir " + ssh_dir)
         ShellCommand("mkdir -p {}".format(ssh_dir)).run()
         priv = ssh.RSAKey.generate(bits=1024)
-        priv_filename = os.path.join(ssh_dir, "id_rsa")
+        private_key = priv
+
+        logger.error("Generating private keyfile " + priv_filename)
+        print("Generating private keyfile " + priv_filename)
         priv.write_private_key_file(filename=priv_filename)
 
         pub = ssh.RSAKey(filename=priv_filename)
         auth_filename = os.path.join(ssh_dir, "authorized_keys")
-        with open(auth_filename, "w") as authfile:
+        logger.error("Adding keys to authorized_keys file " + auth_filename)
+        print("Adding keys to authorized_keys file " + auth_filename)
+        with open(auth_filename, "a") as authfile:
             authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
+        logger.error("Done generating keys")
+        print("Done generating keys")
 
 
 if __name__ == "__main__":
