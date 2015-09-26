@@ -16,13 +16,14 @@
 # limitations under the License.
 #
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
+import functools
 import logbook
 import os
 import socket
 import subprocess
 import threading
 import traceback
-# from nose.tools import set_trace
+from nose.tools import set_trace
 
 __author__ = 'Christian Hopps'
 __version__ = '1.0'
@@ -243,9 +244,6 @@ class SSHConnection (object):
 
     @classmethod
     def _close_socket_expire (cls, ssh_socket, debug):
-        # XXX would really like to start a timeout callback to actually delete
-        # This would allow for the socket to stick around for a bit before closing
-        # in case it will be used again shortly.
         if not ssh_socket:
             return
 
@@ -354,7 +352,7 @@ class SSHClientSession (SSHConnection):
 
 class SSHCommand (SSHConnection):
 
-    def __init__ (self, host, command, port=22, username=None, password=None, debug=False):
+    def __init__ (self, command, host, port=22, username=None, password=None, debug=False):
         self.command = command
         self.exit_code = None
         self.output = ""
@@ -366,13 +364,13 @@ class SSHCommand (SSHConnection):
         """
         Run a command over an ssh channel, return exit code, stdout and stderr.
 
-        >>> status, output, error = SSHCommand("localhost", "ls -d /etc").run_status_stderr()
+        >>> status, output, error = SSHCommand("ls -d /etc", "localhost").run_status_stderr()
         >>> status
         0
         >>> print(output, end="")
         /etc
         >>> print(error, end="")
-        >>> status, output, error = SSHCommand("localhost", "grep foobar doesnt-exist").run_status_stderr()
+        >>> status, output, error = SSHCommand("grep foobar doesnt-exist", "localhost").run_status_stderr()
         >>> status
         2
         >>> print(output, end="")
@@ -385,7 +383,8 @@ class SSHCommand (SSHConnection):
             self.exit_code = self.chan.recv_exit_status()
 
             self.output = "".join([x.decode('utf-8') for x in read_to_eof(self.chan.recv)])
-            self.error_output = "".join([x.decode('utf-8') for x in read_to_eof(self.chan.recv_stderr)])
+            self.error_output = "".join([x.decode('utf-8')
+                                         for x in read_to_eof(self.chan.recv_stderr)])
 
             return (self.exit_code, self.output, self.error_output)
         finally:
@@ -396,18 +395,18 @@ class SSHCommand (SSHConnection):
         Run a command over an ssh channel, return stdout and stderr,
         Raise CalledProcessError on failure
 
-        >>> cmd = SSHCommand("localhost", "ls -d /etc")
+        >>> cmd = SSHCommand("ls -d /etc", "localhost")
         >>> output, error = cmd.run_stderr()
         >>> print(output, end="")
         /etc
         >>> print(error, end="")
-        >>> cmd = SSHCommand("localhost", "grep foobar doesnt-exist")
+        >>> cmd = SSHCommand("grep foobar doesnt-exist", "localhost")
         >>> cmd.run_stderr()                                    # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
             ...
         CalledProcessError: Command 'grep foobar doesnt-exist' returned non-zero exit status 2
         """
-        status, output, error = self.run_status_stderr()
+        status, unused, unused = self.run_status_stderr()
         if status != 0:
             raise CalledProcessError(self.exit_code, self.command,
                                      self.error_output if self.error_output else self.output)
@@ -417,12 +416,12 @@ class SSHCommand (SSHConnection):
         """
         Run a command over an ssh channel, return exitcode and stdout.
 
-        >>> status, output = SSHCommand("localhost", "ls -d /etc").run_status()
+        >>> status, output = SSHCommand("ls -d /etc", "localhost").run_status()
         >>> status
         0
         >>> print(output, end="")
         /etc
-        >>> status, output = SSHCommand("localhost", "grep foobar doesnt-exist").run_status()
+        >>> status, output = SSHCommand("grep foobar doesnt-exist", "localhost").run_status()
         >>> status
         2
         >>> print(output, end="")
@@ -434,10 +433,10 @@ class SSHCommand (SSHConnection):
         Run a command over an ssh channel, return stdout.
         Raise CalledProcessError on failure.
 
-        >>> cmd = SSHCommand("localhost", "ls -d /etc")
+        >>> cmd = SSHCommand("ls -d /etc", "localhost")
         >>> print(cmd.run(), end="")
         /etc
-        >>> cmd = SSHCommand("localhost", "grep foobar doesnt-exist")
+        >>> cmd = SSHCommand("grep foobar doesnt-exist", "localhost")
         >>> cmd.run()                                   # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
             ...
@@ -448,13 +447,13 @@ class SSHCommand (SSHConnection):
 
 class SSHPTYCommand (SSHCommand):
 
-    def __init__ (self, host, command, port=22, username=None, password=None, debug=False):
+    def __init__ (self, command, host, port=22, username=None, password=None, debug=False):
         self.command = command
         self.exit_code = None
         self.output = ""
         self.error_output = ""
 
-        super(SSHCommand, self).__init__(host, port, username, password, debug)
+        super(SSHPTYCommand, self).__init__(host, port, username, password, debug)
 
     def _get_pty (self):
         width, height = terminal_size()
@@ -464,12 +463,12 @@ class SSHPTYCommand (SSHCommand):
         """
         Run a command over an ssh channel, return exitcode and stdout.
 
-        >>> status, output = SSHCommand("localhost", "ls -d /etc").run_status()
+        >>> status, output = SSHCommand("ls -d /etc", "localhost").run_status()
         >>> status
         0
         >>> print(output, end="")
         /etc
-        >>> status, output = SSHCommand("localhost", "grep foobar doesnt-exist").run_status()
+        >>> status, output = SSHCommand("grep foobar doesnt-exist", "localhost").run_status()
         >>> status
         2
         >>> print(output, end="")
@@ -490,37 +489,180 @@ class SSHPTYCommand (SSHCommand):
         Run a command over an ssh channel, return stdout.
         Raise CalledProcessError on failure.
 
-        >>> cmd = SSHCommand("localhost", "ls -d /etc")
+        >>> cmd = SSHCommand("ls -d /etc", "localhost")
         >>> print(cmd.run(), end="")
         /etc
-        >>> cmd = SSHCommand("localhost", "grep foobar doesnt-exist")
+        >>> cmd = SSHCommand("grep foobar doesnt-exist", "localhost")
         >>> cmd.run()                                   # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
             ...
         CalledProcessError: Command 'grep foobar doesnt-exist' returned non-zero exit status 2
         """
-        status, output, error = self.run_status_stderr()
+        status, unused, unused = self.run_status_stderr()
         if status != 0:
             raise CalledProcessError(self.exit_code, self.command,
                                      self.error_output if self.error_output else self.output)
         return self.output
 
 
+class ShellCommand (object):
+
+    def __init__ (self, command, debug=False):
+        self.command_list = ["/bin/sh", "-c", command]
+        self.debug = debug
+        self.exit_code = None
+        self.output = ""
+        self.error_output = ""
+
+    def run_status_stderr (self):
+        """
+        Run a command over an ssh channel, return exit code, stdout and stderr.
+
+        >>> cmd = ShellCommand("ls -d /etc")
+        >>> status, output, error = cmd.run_status_stderr()
+        >>> status
+        0
+        >>> print(output, end="")
+        /etc
+        >>> print(error, end="")
+        """
+        """
+        >>> status, output, error = ShellCommand("grep foobar doesnt-exist").run_status_stderr()
+        >>> status
+        2
+        >>> print(output, end="")
+        >>>
+        >>> print(error, end="")
+        grep: doesnt-exist: No such file or directory
+        """
+        try:
+            pipe = subprocess.Popen(self.command_list,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    close_fds=True)
+            self.output, self.error_output = pipe.communicate()
+            self.exit_code = pipe.returncode
+        except OSError:
+            self.exit_code = 1
+
+        return (self.exit_code, self.output, self.error_output)
+
+    def run_stderr (self):
+        """
+        Run a command over an ssh channel, return stdout and stderr,
+        Raise CalledProcessError on failure
+
+        >>> cmd = ShellCommand("ls -d /etc")
+        >>> output, error = cmd.run_stderr()
+        >>> print(output, end="")
+        /etc
+        >>> print(error, end="")
+        >>> cmd = ShellCommand("grep foobar doesnt-exist")
+        >>> cmd.run_stderr()                                    # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+            ...
+        CalledProcessError: Command 'grep foobar doesnt-exist' returned non-zero exit status 2
+        """
+        status, unused, unused = self.run_status_stderr()
+        if status != 0:
+            raise CalledProcessError(self.exit_code, self.command_list,
+                                     self.error_output if self.error_output else self.output)
+        return self.output, self.error_output
+
+    def run_status (self):
+        """
+        Run a command over an ssh channel, return exitcode and stdout.
+
+        >>> status, output = ShellCommand("ls -d /etc").run_status()
+        >>> status
+        0
+        >>> print(output, end="")
+        /etc
+        >>> status, output = ShellCommand("grep foobar doesnt-exist").run_status()
+        >>> status
+        2
+        >>> print(output, end="")
+        """
+        return self.run_status_stderr()[0:2]
+
+    def run (self):
+        """
+        Run a command over an ssh channel, return stdout.
+        Raise CalledProcessError on failure.
+
+        >>> cmd = ShellCommand("ls -d /etc", False)
+        >>> print(cmd.run(), end="")
+        /etc
+        >>> cmd = ShellCommand("grep foobar doesnt-exist", False)
+        >>> cmd.run()                                   # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+            ...
+        CalledProcessError: Command 'grep foobar doesnt-exist' returned non-zero exit status 2
+        """
+        return self.run_stderr()[0]
+
+
 class Host (object):
-    def __init__ (self, server=None, tracelog=None):
-        """A host object is either local or remote and provides easy access to the given local or remote host"""
-        self.server = server
-        self.trace = tracelog
+    def __init__ (self, server=None, port=22, cwd=None, username=None, password=None, debug=False):
+        """
+        A host object is either local or remote and provides easy access
+        to the given local or remote host
+        """
+        self.cwd = cwd
+        if server:
+            self.cmd_class = functools.partial(SSHCommand,
+                                               host=server,
+                                               port=port,
+                                               username=username,
+                                               password=password,
+                                               debug=debug)
+        else:
+            self.cmd_class = functools.partial(ShellCommand, debug=debug)
+
+        if not self.cwd:
+            self.cwd = self.cmd_class("pwd").run().strip()
+
+    def get_cmd (self, command):
+        return "bash -c 'cd {} && {}'".format(self.cwd, shell_escape_single_quote(command))
+
+    def run_status_stderr (self, command):
+        """
+        Run a command return exit code, stdout and stderr.
+        >>> host = Host()
+        >>> status, output, error = host.run_status_stderr("ls -d /etc")
+        >>> status
+        0
+        >>> print(output, end="")
+        /etc
+        >>> print(error, end="")
+        >>> status, output, error = host.run_status_stderr("grep foobar doesnt-exist")
+        >>> status
+        2
+        >>> print(output, end="")
+        >>>
+        >>> print(error, end="")
+        grep: doesnt-exist: No such file or directory
+        """
+        return self.cmd_class(self.get_cmd(command)).run_status_stderr()
+
+    def run_status (self, command):
+        return self.cmd_class(self.get_cmd(command)).run_status()
+
+    def run_stderr (self, command):
+        return self.cmd_class(self.get_cmd(command)).run_stderr()
+
+    def run (self, command):
+        return self.cmd_class(self.get_cmd(command)).run()
 
 if __name__ == "__main__":
     import time
     import gc
 
-    cmd = SSHCommand("localhost", "ls -d /etc", debug=True)
+    cmd = SSHCommand("ls -d /etc", "localhost", debug=True)
     print(cmd.run())
     gc.collect()
 
-    print(SSHCommand("localhost", "ls -d /etc", debug=True).run())
+    print(SSHCommand("ls -d /etc", "localhost", debug=True).run())
     gc.collect()
 
     print("Going to sleep for 2")
@@ -528,6 +670,6 @@ if __name__ == "__main__":
     gc.collect()
 
     print("Waking up")
-    print(SSHCommand("localhost", "ls -d /etc", debug=True).run())
+    print(SSHCommand("ls -d /etc", "localhost", debug=True).run())
     gc.collect()
     print("Exiting")
