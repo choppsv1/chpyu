@@ -23,7 +23,7 @@ import socket
 import subprocess
 import threading
 import traceback
-from nose.tools import set_trace
+from nose.tools import set_trace                            # pylint: disable=W0611
 
 __author__ = 'Christian Hopps'
 __version__ = '1.0'
@@ -653,6 +653,21 @@ class Host (object):
 
     def run (self, command):
         return self.cmd_class(self.get_cmd(command)).run()
+
+
+def setup_module (unused):
+    ssh_dir = "{}/.ssh".format(os.environ['HOME'])
+    if not os.path.exists(ssh_dir):
+        ShellCommand("mkdir -p {}".format(ssh_dir)).run()
+        priv = ssh.RSAKey.generate(bits=1024)
+        priv_filename = os.path.join(ssh_dir, "id_rsa")
+        priv.write_private_key_file(filename=priv_filename)
+
+        pub = ssh.RSAKey(filename=priv_filename)
+        auth_filename = os.path.join(ssh_dir, "authorized_keys")
+        with open(auth_filename, "w") as authfile:
+            authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
+
 
 if __name__ == "__main__":
     import time
