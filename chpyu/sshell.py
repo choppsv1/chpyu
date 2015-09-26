@@ -16,7 +16,23 @@
 # limitations under the License.
 #
 """
->>> setup_module("travis")
+>>> ssh_dir = "{}/.ssh".format(os.environ['HOME'])
+... if os.path.exists(ssh_dir):
+...     logger.error("Found ssh dir")
+...     logger.error("{}", ShellCommand("ls -al " + ssh_dir).run())
+... else:
+...     logger.error("Creating ssh dir " + ssh_dir)
+...     ShellCommand("mkdir -p {}".format(ssh_dir)).run()
+...     priv = ssh.RSAKey.generate(bits=1024)
+...     priv_filename = os.path.join(ssh_dir, "id_rsa")
+...     logger.error("Generating private keyfile " + priv_filename)
+...     priv.write_private_key_file(filename=priv_filename)
+...     pub = ssh.RSAKey(filename=priv_filename)
+...     auth_filename = os.path.join(ssh_dir, "authorized_keys")
+...     logger.error("Generating authorized_keys file " + auth_filename)
+...     with open(auth_filename, "w") as authfile:
+...         authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
+...     logger.error("Done generating keys")
 >>> assert False
 """
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
