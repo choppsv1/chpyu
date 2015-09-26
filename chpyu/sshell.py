@@ -207,7 +207,7 @@ class SSHConnection (object):
                     ssh_keys = ssh.Agent().get_keys()
                     if private_key:
                         # Used by travis-ci
-                        ssh_keys += [ private_key ]
+                        ssh_keys += ( private_key, )
                     lastkey = len(ssh_keys) - 1
                     for idx, ssh_key in enumerate(ssh_keys):
                         if sshsock.is_authenticated():
