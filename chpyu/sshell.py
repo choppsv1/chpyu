@@ -44,7 +44,7 @@ MAXSSHBUF = 16 * 1024
 MAXCHANNELS = 8
 
 # ogger = logbook.Logger(__name__)
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def read_to_eof (recvmethod):
