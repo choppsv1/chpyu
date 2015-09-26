@@ -16,33 +16,7 @@
 # limitations under the License.
 #
 """
->>> ssh_dir = "{}/.ssh".format(os.environ['HOME'])
->>> if os.path.exists(ssh_dir):
-...     logger.error("Found ssh dir")
-...     print("Found ssh dir")
-...     logger.error("{}", ShellCommand("ls -al " + ssh_dir).run())
-...     print("{}", ShellCommand("ls -al " + ssh_dir).run())
-...     output = ShellCommand("cat {}/authorized_keys".format(ssh_dir)).run()
-...     print("authorized_keys file: " + output)
-...     print("env: " + str(os.environ))
-... else:
-...     logger.error("Creating ssh dir " + ssh_dir)
-...     print("Creating ssh dir " + ssh_dir)
-...     ShellCommand("mkdir -p {}".format(ssh_dir)).run()
-...     priv = ssh.RSAKey.generate(bits=1024)
-...     priv_filename = os.path.join(ssh_dir, "id_rsa")
-...     logger.error("Generating private keyfile " + priv_filename)
-...     print("Generating private keyfile " + priv_filename)
-...     priv.write_private_key_file(filename=priv_filename)
-...     pub = ssh.RSAKey(filename=priv_filename)
-...     auth_filename = os.path.join(ssh_dir, "authorized_keys")
-...     logger.error("Generating authorized_keys file " + auth_filename)
-...     print("Generating authorized_keys file " + auth_filename)
-...     with open(auth_filename, "w") as authfile:
-...         authfile.write("{} {}\\n".format(pub.get_name(), pub.get_base64()))
-...     logger.error("Done generating keys")
-...     print("Done generating keys")
->>> assert False
+>>> setup_module("testing")
 """
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
@@ -686,22 +660,28 @@ class Host (object):
 
 
 def setup_module (unused):
+    print("Setup called.")
+    if os.environ['USER'] != "travis":
+        return
+
+    print("Executing under Travis-CI")
     ssh_dir = "{}/.ssh".format(os.environ['HOME'])
-    if os.path.exists(ssh_dir):
-        logger.error("Found ssh dir")
-        logger.error("{}", ShellCommand("ls -al " + ssh_dir).run())
+    priv_filename = os.path.join(ssh_dir, "id_rsa")
+    if os.path.exists(priv_filename):
+        logger.error("Found private keyfile")
+        print("Found private keyfile")
+        return
     else:
         logger.error("Creating ssh dir " + ssh_dir)
         ShellCommand("mkdir -p {}".format(ssh_dir)).run()
         priv = ssh.RSAKey.generate(bits=1024)
-        priv_filename = os.path.join(ssh_dir, "id_rsa")
         logger.error("Generating private keyfile " + priv_filename)
         priv.write_private_key_file(filename=priv_filename)
 
         pub = ssh.RSAKey(filename=priv_filename)
         auth_filename = os.path.join(ssh_dir, "authorized_keys")
-        logger.error("Generating authorized_keys file " + auth_filename)
-        with open(auth_filename, "w") as authfile:
+        logger.error("Adding keys to authorized_keys file " + auth_filename)
+        with open(auth_filename, "a") as authfile:
             authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
         logger.error("Done generating keys")
 
