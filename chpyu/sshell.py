@@ -17,7 +17,7 @@
 #
 """
 >>> ssh_dir = "{}/.ssh".format(os.environ['HOME'])
-... if os.path.exists(ssh_dir):
+>>> if os.path.exists(ssh_dir):
 ...     logger.error("Found ssh dir")
 ...     logger.error("{}", ShellCommand("ls -al " + ssh_dir).run())
 ... else:
