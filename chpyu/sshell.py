@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 """
->>> setup_module()
+>>> setup_module("travis")
 """
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
