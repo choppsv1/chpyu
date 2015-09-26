@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""
->>> setup_module("testing")
-"""
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
 import logbook
