@@ -546,7 +546,9 @@ class ShellCommand (object):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE,
                                     close_fds=True)
-            self.output, self.error_output = pipe.communicate()
+            output, error_output = pipe.communicate()
+            self.output = output.decode('utf-8')
+            self.error_output = error_output.decode('utf-8')
             self.exit_code = pipe.returncode
         except OSError:
             self.exit_code = 1
