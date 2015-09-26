@@ -31,7 +31,7 @@
 ...     auth_filename = os.path.join(ssh_dir, "authorized_keys")
 ...     logger.error("Generating authorized_keys file " + auth_filename)
 ...     with open(auth_filename, "w") as authfile:
-...         authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
+...         authfile.write("{} {}\\n".format(pub.get_name(), pub.get_base64()))
 ...     logger.error("Done generating keys")
 >>> assert False
 """
