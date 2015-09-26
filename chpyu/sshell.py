@@ -673,17 +673,21 @@ def setup_module (unused):
         return
     else:
         logger.error("Creating ssh dir " + ssh_dir)
+        print("Creating ssh dir " + ssh_dir)
         ShellCommand("mkdir -p {}".format(ssh_dir)).run()
         priv = ssh.RSAKey.generate(bits=1024)
         logger.error("Generating private keyfile " + priv_filename)
+        print("Generating private keyfile " + priv_filename)
         priv.write_private_key_file(filename=priv_filename)
 
         pub = ssh.RSAKey(filename=priv_filename)
         auth_filename = os.path.join(ssh_dir, "authorized_keys")
         logger.error("Adding keys to authorized_keys file " + auth_filename)
+        print("Adding keys to authorized_keys file " + auth_filename)
         with open(auth_filename, "a") as authfile:
             authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
         logger.error("Done generating keys")
+        print("Done generating keys")
 
 
 if __name__ == "__main__":
