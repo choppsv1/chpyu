@@ -22,6 +22,8 @@
 ...     print("Found ssh dir")
 ...     logger.error("{}", ShellCommand("ls -al " + ssh_dir).run())
 ...     print("{}", ShellCommand("ls -al " + ssh_dir).run())
+...     output = ShellCommand("cat {}/authorized_keys".format(ssh_dir)).run()
+...     print("authorized_keys file: " + output)
 ... else:
 ...     logger.error("Creating ssh dir " + ssh_dir)
 ...     print("Creating ssh dir " + ssh_dir)
