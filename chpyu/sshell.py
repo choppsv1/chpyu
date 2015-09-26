@@ -21,8 +21,8 @@
 """
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
-# import logbook
-import logging
+import logbook
+# import logging
 import os
 import socket
 import subprocess
@@ -43,8 +43,8 @@ import paramiko as ssh
 MAXSSHBUF = 16 * 1024
 MAXCHANNELS = 8
 
-# ogger = logbook.Logger(__name__)
-logger = logging.getLogger(__name__)
+logger = logbook.Logger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def read_to_eof (recvmethod):
