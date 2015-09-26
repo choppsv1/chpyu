@@ -33,7 +33,6 @@ __author__ = 'Christian Hopps'
 __version__ = '1.0'
 __docformat__ = "restructuredtext en"
 
-
 class CalledProcessError (subprocess.CalledProcessError):
     pass
 
@@ -44,6 +43,9 @@ MAXCHANNELS = 8
 
 logger = logbook.Logger(__name__)
 # logger = logging.getLogger(__name__)
+
+# Used by travis-ci testing
+private_key = None
 
 
 def read_to_eof (recvmethod):
@@ -203,6 +205,9 @@ class SSHConnection (object):
 
                 if not sshsock.is_authenticated():
                     ssh_keys = ssh.Agent().get_keys()
+                    if private_key:
+                        # Used by travis-ci
+                        ssh_keys += [ private_key ]
                     lastkey = len(ssh_keys) - 1
                     for idx, ssh_key in enumerate(ssh_keys):
                         if sshsock.is_authenticated():
@@ -660,9 +665,11 @@ class Host (object):
 
 
 def setup_module (unused):
+    global private_key
     print("Setup called.")
     if os.environ['USER'] != "travis":
         return
+
 
     print("Executing under Travis-CI")
     ssh_dir = "{}/.ssh".format(os.environ['HOME'])
@@ -676,6 +683,8 @@ def setup_module (unused):
         print("Creating ssh dir " + ssh_dir)
         ShellCommand("mkdir -p {}".format(ssh_dir)).run()
         priv = ssh.RSAKey.generate(bits=1024)
+        private_key = priv
+
         logger.error("Generating private keyfile " + priv_filename)
         print("Generating private keyfile " + priv_filename)
         priv.write_private_key_file(filename=priv_filename)
