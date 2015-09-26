@@ -48,3 +48,7 @@ def setup_module (unused):
             authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
         logger.error("Done generating keys")
 
+
+
+def test_sshell ():
+    pass
