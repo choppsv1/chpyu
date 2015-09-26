@@ -27,12 +27,12 @@
 ...     priv_filename = os.path.join(ssh_dir, "id_rsa")
 ...     logger.error("Generating private keyfile " + priv_filename)
 ...     priv.write_private_key_file(filename=priv_filename)
->>> pub = ssh.RSAKey(filename=priv_filename)
->>> auth_filename = os.path.join(ssh_dir, "authorized_keys")
->>>     logger.error("Generating authorized_keys file " + auth_filename)
->>> with open(auth_filename, "w") as authfile:
+...     pub = ssh.RSAKey(filename=priv_filename)
+...     auth_filename = os.path.join(ssh_dir, "authorized_keys")
+...     logger.error("Generating authorized_keys file " + auth_filename)
+...     with open(auth_filename, "w") as authfile:
 ...     authfile.write("{} {}\n".format(pub.get_name(), pub.get_base64()))
->>> logger.error("Done generating keys")
+...     logger.error("Done generating keys")
 """
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
