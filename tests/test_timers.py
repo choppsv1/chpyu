@@ -23,6 +23,7 @@ timer_heap = TimerHeap("Testing Timer Heap")
 
 
 def test_simple_timer ():
+    """Simple timer test"""
     test_dict = {}
 
     def expired (arg):
@@ -35,6 +36,7 @@ def test_simple_timer ():
 
 
 def test_many_timers ():
+    """Test more timers than standard thread based timer could handle"""
     test_dict = {}
 
     def expired (arg):
