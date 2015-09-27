@@ -29,40 +29,40 @@ __author__ = 'Christian Hopps'
 __version__ = '1.0'
 __docformat__ = "restructuredtext en"
 
-try:
-    from pyisis.lib.util import debug_exception
-    from pyisis.lib.threads import Timer as ThreadTimer
-except ImportError:
 
-    def debug_exception ():
-        pdb.set_trace()
-    if sys.version_info >= (3, 0):
-        from threading import Timer as _Timer
-        from _thread import get_ident
-    else:
-        from threading import _Timer as _Timer
-        from thread import get_ident
+def debug_exception ():
+    pdb.set_trace()
 
-    thread_mapping = { get_ident(): threading.current_thread() }
+if sys.version_info >= (3, 3):
+    from threading import Timer as _Timer
+    from _thread import get_ident
+elif sys.version_info >= (3, 2):
+    from threading import _Timer as _Timer
+    from _thread import get_ident
+else:
+    from threading import _Timer as _Timer
+    from thread import get_ident
 
-    class ThreadTimer (_Timer):
-        def __init__(self, name, interval, function, *args, **kwargs):
-            super(ThreadTimer, self).__init__(interval, function, args, kwargs)
-            self.basename = "TimerThread({})".format(name)
-            self.name = "Init-" + self.basename
-            self.daemon = True
+thread_mapping = { get_ident(): threading.current_thread() }
 
-        def run (self):
-            thread_id = get_ident()
-            thread_mapping[thread_id] = self
+class ThreadTimer (_Timer):
+    def __init__(self, name, interval, function, *args, **kwargs):
+        super(ThreadTimer, self).__init__(interval, function, args, kwargs)
+        self.basename = "TimerThread({})".format(name)
+        self.name = "Init-" + self.basename
+        self.daemon = True
 
-            self.name = "Running-" + self.basename
-            rv = super(ThreadTimer, self).run()
-            self.name = "Ran-" + self.basename
-            return rv
+    def run (self):
+        thread_id = get_ident()
+        thread_mapping[thread_id] = self
 
-        def __str__ (self):
-            return self.name
+        self.name = "Running-" + self.basename
+        rv = super(ThreadTimer, self).run()
+        self.name = "Ran-" + self.basename
+        return rv
+
+    def __str__ (self):
+        return self.name
 
 
 logger = logbook.Logger(__name__)
