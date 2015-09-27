@@ -25,7 +25,7 @@ required = [
 ]
 
 setup (name='chpyu',
-       version='1.0.2',
+       version='1.0.3',
        description='chopps python util library',
        author='Christian E. Hopps',
        author_email='chopps@gmail.com',
