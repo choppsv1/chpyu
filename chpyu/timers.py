@@ -33,7 +33,7 @@ __docformat__ = "restructuredtext en"
 def debug_exception ():
     pdb.set_trace()
 
-if sys.version_info >= (3, 0):
+if sys.version_info >= (3, 3):
     from threading import Timer as _Timer
     from _thread import get_ident
 else:
