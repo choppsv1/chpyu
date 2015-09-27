@@ -36,6 +36,9 @@ def debug_exception ():
 if sys.version_info >= (3, 3):
     from threading import Timer as _Timer
     from _thread import get_ident
+elif sys.version_info >= (3, 2):
+    from threading import _Timer as _Timer
+    from _thread import get_ident
 else:
     from threading import _Timer as _Timer
     from thread import get_ident
