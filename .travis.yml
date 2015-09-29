@@ -17,6 +17,6 @@ before_script:
   - tox -e cov-init
 script:
   - tox -e $TOXENV
-after_success:
+before_deploy_script:
   - tox -e cov-report
   - coveralls
