@@ -17,6 +17,7 @@
 #
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
+import getpass
 import logbook
 # import logging
 import os
@@ -24,11 +25,11 @@ import socket
 import subprocess
 import threading
 import traceback
-from nose.tools import set_trace                            # pylint: disable=W0611
 
 __author__ = 'Christian Hopps'
 __version__ = '1.0'
 __docformat__ = "restructuredtext en"
+
 
 class CalledProcessError (subprocess.CalledProcessError):
     pass
@@ -92,7 +93,6 @@ class SSHConnection (object):
         self.ssh = None
 
         if not username:
-            import getpass
             username = getpass.getuser()
 
         self.username = username
@@ -666,9 +666,12 @@ class Host (object):
 def setup_module (unused):
     global private_key
     print("Setup called.")
-    if os.environ['USER'] != "travis":
-        return
-
+    if 'USER' in os.environ:
+        if os.environ['USER'] != "travis":
+            return
+    else:
+        if getpass.getuser() != "travis":
+            return
 
     print("Executing under Travis-CI")
     ssh_dir = "{}/.ssh".format(os.environ['HOME'])

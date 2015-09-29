@@ -17,7 +17,11 @@
 #
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import time
+import logbook
 from chpyu.timers import Timer, TimerHeap
+
+logbook.StderrHandler().push_application()
+logger = logbook.Logger(__name__)
 
 timer_heap = TimerHeap("Testing Timer Heap")
 
@@ -40,27 +44,31 @@ def test_many_timers ():
     test_dict = {}
 
     def expired (arg):
-        test_dict[arg] = 1
+        test_dict[arg] = timer_heap.expire_gen
 
-    #----------------------------------
-    # Create and start a lot of timers
-    #----------------------------------
+    #--------------------------------------------------
+    # Create and start a lot of timers with 25% jitter
+    #--------------------------------------------------
 
     NTIMERS = 100000
     for idx in range(0, NTIMERS):
-        Timer(timer_heap, 0, expired, idx).start(.2)
+        Timer(timer_heap, .25, expired, idx).start(1)
 
-    time.sleep(.4)
+    time.sleep(2)
 
-    #----------------
-    # Verify results
-    #----------------
+    #-----------------------------------------------------------
+    # Verify results print info on number of actual expirations
+    #-----------------------------------------------------------
 
+    firecount = 0
+    prevgen = -1
     for idx in range(0, NTIMERS):
-        assert test_dict[idx] == 1
+        assert idx in test_dict
+        if test_dict[idx] != prevgen:
+            prevgen = test_dict[idx]
+            firecount += 1
 
-
-
+    logger.info("Expired {} times for {} timers".format(firecount, NTIMERS))
 
 
 __author__ = 'Christian Hopps'

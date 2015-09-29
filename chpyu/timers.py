@@ -135,6 +135,7 @@ class TimerHeap (object):
         self.lock = threading.RLock()
         self.rtimer = None
         self.expiring = False
+        self.expire_gen = 0
 
     def __enter__ (self):
         "Use with statement to hold lock"
@@ -180,6 +181,7 @@ class TimerHeap (object):
         try:
             # Set expiring variable and forget old timer.
             with self.lock:
+                self.expire_gen += 1
                 self.expiring = True
                 self.rtimer = None
 
