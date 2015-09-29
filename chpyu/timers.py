@@ -45,6 +45,7 @@ else:
 
 thread_mapping = { get_ident(): threading.current_thread() }
 
+
 class ThreadTimer (_Timer):
     def __init__(self, name, interval, function, *args, **kwargs):
         super(ThreadTimer, self).__init__(interval, function, args, kwargs)
@@ -89,11 +90,6 @@ class Timer (object):
     def __hash__ (self):
         return id(self)
 
-    def __cmp__ (self, other):
-        if other is None:
-            return -1
-        return self.expire - other.expire
-
     def __lt__ (self, other):
         if other is None:
             return -1
@@ -101,9 +97,6 @@ class Timer (object):
 
     def __eq__ (self, other):
         return id(self) == id(other)
-
-    def __ne__ (self, other):
-        return id(self) != id(other)
 
     def scheduled (self):
         return self.expire is not None
@@ -123,8 +116,6 @@ class Timer (object):
         had_run = self.timerheap.remove(self)
         self.expire = None
         return had_run
-
-functools.cmp_to_key(Timer.__cmp__)
 
 
 class TimerHeap (object):
@@ -239,5 +230,4 @@ class TimerHeap (object):
                 return False
             else:
                 return True
-
 
