@@ -39,6 +39,44 @@ def test_simple_timer ():
     assert test_dict["key1"] == 1
 
 
+def test_remove_timer ():
+    """Stop timer test"""
+    test_dict = {}
+
+    def expired (arg):
+        test_dict[arg] = 1
+
+    timer = Timer(timer_heap, 0, expired, "key1")
+    timer.start(.1)
+
+    # Also test the string name of the timer.
+    with timer_heap:
+        time.sleep(.2)
+        assert timer.is_scheduled()
+        assert str(timer_heap.rtimer) == "Running-TimerThread(Testing Timer Heap)"
+        timer.stop()
+
+    time.sleep(.2)
+    assert "key1" not in test_dict
+
+
+def test_timer_uncaught_exception ():
+    """Stop timer test"""
+
+
+    def fail (arg):
+        assert False
+
+    handler = logbook.TestHandler()
+    handler.push_application()
+    with handler.applicationbound():
+        timer = Timer(timer_heap, 0, fail, "key1")
+        timer.start(.1)
+        time.sleep(.2)
+
+        assert handler.formatted_records[0] == u"[ERROR] chpyu.timers: Ignoring uncaught exception within timer action: assert False"
+
+
 def test_many_timers ():
     """Test more timers than standard thread based timer could handle"""
     test_dict = {}

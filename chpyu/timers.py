@@ -30,9 +30,6 @@ __version__ = '1.0'
 __docformat__ = "restructuredtext en"
 
 
-def debug_exception ():
-    pdb.set_trace()
-
 if sys.version_info >= (3, 3):
     from threading import Timer as _Timer
     from _thread import get_ident
@@ -83,9 +80,7 @@ class Timer (object):
         try:
             self.action(*self.args, **self.kwargs)
         except Exception as ex:
-            logger.error("Uncaught exception within timer action: {}", ex)
-            debug_exception()
-            raise
+            logger.error("Ignoring uncaught exception within timer action: {}", ex)
 
     def __hash__ (self):
         return id(self)
@@ -98,7 +93,7 @@ class Timer (object):
     def __eq__ (self, other):
         return id(self) == id(other)
 
-    def scheduled (self):
+    def is_scheduled (self):
         return self.expire is not None
 
     def start (self, expire):
@@ -196,7 +191,6 @@ class TimerHeap (object):
                     expired.run()
         except Exception as ex:
             logger.error("Unexpected Exception: {}", ex)
-            debug_exception()
         finally:
             # This is never set while expiring is True
             assert self.rtimer is None
