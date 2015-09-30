@@ -38,6 +38,20 @@ def test_simple_timer ():
     time.sleep(.2)
     assert test_dict["key1"] == 1
 
+def test_restart_timer ():
+    """Stop timer test"""
+    test_dict = {}
+
+    def expired (arg):
+        test_dict[arg] = 1
+
+    timer = Timer(timer_heap, 0, expired, "key1")
+    timer.start(10)
+    time.sleep(.1)
+    timer.start(.1)
+    time.sleep(.2)
+    assert "key1" in test_dict
+
 
 def test_remove_timer ():
     """Stop timer test"""
