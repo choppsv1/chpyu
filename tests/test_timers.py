@@ -38,6 +38,7 @@ def test_simple_timer ():
     time.sleep(.2)
     assert test_dict["key1"] == 1
 
+
 def test_restart_timer ():
     """Stop timer test"""
     test_dict = {}

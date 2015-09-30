@@ -41,7 +41,7 @@ class Timer (object):
         self.args = args
         self.kwargs = kwargs
         self.expire = None
-        self.timerheap = heap
+        self.timer_heap = heap
 
     def run (self):
         try:
@@ -61,7 +61,8 @@ class Timer (object):
         return id(self) == id(other)
 
     def is_scheduled (self):
-        return self.expire is not None
+        with self.timer_heap:
+            return self.expire is not None
 
     def start (self, expire):
         self.stop()
@@ -72,10 +73,10 @@ class Timer (object):
         else:
             self.expire += expire
 
-        self.timerheap.add(self)
+        self.timer_heap.add(self)
 
     def stop (self):
-        had_run = self.timerheap.remove(self)
+        had_run = self.timer_heap.remove(self)
         self.expire = None
         return had_run
 
@@ -105,9 +106,8 @@ class TimerHeap (object):
                 top = self.heap[0]
             else:
                 top = None
-            if timer in self.timers:
-                self._remove(timer)
 
+            assert timer not in self.timers
             self.timers[timer] = timer
             heapq.heappush(self.heap, timer)
 
@@ -175,7 +175,7 @@ class TimerHeap (object):
 
     def _remove (self, timer):
         """Remove timer from heap lock and presence are assumed"""
-        assert timer.timerheap == self
+        assert timer.timer_heap == self
         del self.timers[timer]
         assert timer in self.heap
         self.heap.remove(timer)
