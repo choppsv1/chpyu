@@ -53,7 +53,6 @@ def test_remove_timer ():
     with timer_heap:
         time.sleep(.2)
         assert timer.is_scheduled()
-        assert str(timer_heap.rtimer) == "Running-TimerThread(Testing Timer Heap)"
         timer.stop()
 
     time.sleep(.2)
@@ -73,8 +72,16 @@ def test_timer_uncaught_exception ():
         timer = Timer(timer_heap, 0, fail, "key1")
         timer.start(.1)
         time.sleep(.2)
+        assert "assert False" in handler.formatted_records[0]
 
-        assert handler.formatted_records[0] == u"[ERROR] chpyu.timers: Ignoring uncaught exception within timer action: assert False"
+
+def test_timer_comparison_coverage ():
+    timer = Timer(timer_heap, 0, lambda: None)
+    assert timer == timer
+
+    timer.start(.1)
+    assert timer < None
+    time.sleep(.2)
 
 
 def test_many_timers ():

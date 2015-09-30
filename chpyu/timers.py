@@ -30,39 +30,6 @@ __version__ = '1.0'
 __docformat__ = "restructuredtext en"
 
 
-if sys.version_info >= (3, 3):
-    from threading import Timer as _Timer
-    from _thread import get_ident
-elif sys.version_info >= (3, 2):
-    from threading import _Timer as _Timer
-    from _thread import get_ident
-else:
-    from threading import _Timer as _Timer
-    from thread import get_ident
-
-thread_mapping = { get_ident(): threading.current_thread() }
-
-
-class ThreadTimer (_Timer):
-    def __init__(self, name, interval, function, *args, **kwargs):
-        super(ThreadTimer, self).__init__(interval, function, args, kwargs)
-        self.basename = "TimerThread({})".format(name)
-        self.name = "Init-" + self.basename
-        self.daemon = True
-
-    def run (self):
-        thread_id = get_ident()
-        thread_mapping[thread_id] = self
-
-        self.name = "Running-" + self.basename
-        rv = super(ThreadTimer, self).run()
-        self.name = "Ran-" + self.basename
-        return rv
-
-    def __str__ (self):
-        return self.name
-
-
 logger = logbook.Logger(__name__)
 
 
@@ -160,7 +127,7 @@ class TimerHeap (object):
                 ival = top.expire - time.time()
                 if ival < 0:
                     ival = 0
-                self.rtimer = ThreadTimer(self.desc, ival, self.expire)
+                self.rtimer = threading.Timer(ival, self.expire)
                 self.rtimer.start()
 
     def expire (self):
@@ -202,7 +169,7 @@ class TimerHeap (object):
                     ival = top.expire - time.time()
                     if ival < 0:
                         ival = 0
-                    self.rtimer = ThreadTimer(self.desc, ival, self.expire)
+                    self.rtimer = threading.Timer(ival, self.expire)
                     self.rtimer.start()
                 self.expiring = False
 
@@ -210,8 +177,7 @@ class TimerHeap (object):
         """Remove timer from heap lock and presence are assumed"""
         assert timer.timerheap == self
         del self.timers[timer]
-        if timer not in self.heap:
-            pdb.set_trace()
+        assert timer in self.heap
         self.heap.remove(timer)
         heapq.heapify(self.heap)
 
