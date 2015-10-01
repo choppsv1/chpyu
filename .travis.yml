@@ -1,15 +1,21 @@
 language: python
 
-python:
-  - "2.7"
-  - "3.2"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "pypy"
+env:
+  - TOXENV=py27
+  - TOXENV=py33
+  - TOXENV=py34
+  - TOXENV=pypy
+  - TOXENV=pypy3
 
 install:
- - pip install -r requirements.txt
+  - pip install tox
+  - pip install coveralls
+  - pip install -r requirements.txt
 
-script: nosetests
-# script: py.test -s --verbose --doctest-modules chpyu
+before_script:
+  - tox -e cov-init
+script:
+  - tox -e $TOXENV
+before_deploy_script:
+  - tox -e cov-report
+  - coveralls

@@ -17,7 +17,11 @@
 #
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import time
+import logbook
 from chpyu.timers import Timer, TimerHeap
+
+logbook.StderrHandler().push_application()
+logger = logbook.Logger(__name__)
 
 timer_heap = TimerHeap("Testing Timer Heap")
 
@@ -35,32 +39,96 @@ def test_simple_timer ():
     assert test_dict["key1"] == 1
 
 
-def test_many_timers ():
-    """Test more timers than standard thread based timer could handle"""
+def test_restart_timer ():
+    """Stop timer test"""
     test_dict = {}
 
     def expired (arg):
         test_dict[arg] = 1
 
-    #----------------------------------
-    # Create and start a lot of timers
-    #----------------------------------
+    timer = Timer(timer_heap, 0, expired, "key1")
+    timer.start(10)
+    time.sleep(.1)
+    timer.start(.1)
+    time.sleep(.2)
+    assert "key1" in test_dict
+
+
+def test_remove_timer ():
+    """Stop timer test"""
+    test_dict = {}
+
+    def expired (arg):
+        test_dict[arg] = 1
+
+    timer = Timer(timer_heap, 0, expired, "key1")
+    timer.start(.1)
+
+    # Also test the string name of the timer.
+    with timer_heap:
+        time.sleep(.2)
+        assert timer.is_scheduled()
+        timer.stop()
+
+    time.sleep(.2)
+    assert "key1" not in test_dict
+
+
+def test_timer_uncaught_exception ():
+    """Stop timer test"""
+
+
+    def fail (arg):
+        assert False
+
+    handler = logbook.TestHandler()
+    handler.push_application()
+    with handler.applicationbound():
+        timer = Timer(timer_heap, 0, fail, "key1")
+        timer.start(.1)
+        time.sleep(.2)
+        assert "assert False" in handler.formatted_records[0]
+
+
+def test_timer_comparison_coverage ():
+    timer = Timer(timer_heap, 0, lambda: None)
+    assert timer == timer
+
+    timer.start(.1)
+    assert timer < None
+    time.sleep(.2)
+
+
+def test_many_timers ():
+    """Test more timers than standard thread based timer could handle"""
+    test_dict = {}
+
+    def expired (arg):
+        test_dict[arg] = timer_heap.expire_gen
+
+    #--------------------------------------------------
+    # Create and start a lot of timers with 25% jitter
+    #--------------------------------------------------
 
     NTIMERS = 100000
     for idx in range(0, NTIMERS):
-        Timer(timer_heap, 0, expired, idx).start(.2)
+        Timer(timer_heap, .25, expired, idx).start(1)
 
-    time.sleep(.4)
+    time.sleep(2)
 
-    #----------------
-    # Verify results
-    #----------------
+    #-----------------------------------------------------------
+    # Verify results print info on number of actual expirations
+    #-----------------------------------------------------------
 
+    firecount = 0
+    prevgen = -1
     for idx in range(0, NTIMERS):
-        assert test_dict[idx] == 1
+        assert idx in test_dict
+        if test_dict[idx] != prevgen:
+            prevgen = test_dict[idx]
+            firecount += 1
 
-
-
+    logger.info("Expired {} times for {} timers".format(firecount, NTIMERS))
 
 
 __author__ = 'Christian Hopps'
