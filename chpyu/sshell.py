@@ -18,8 +18,7 @@
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import functools
 import getpass
-import logbook
-# import logging
+import logging
 import os
 import socket
 import subprocess
@@ -39,7 +38,7 @@ import paramiko as ssh
 MAXSSHBUF = 16 * 1024
 MAXCHANNELS = 8
 
-logger = logbook.Logger(__name__)
+logger = logging.getLogger(__name__)
 # logger = logging.getLogger(__name__)
 
 # Used by travis-ci testing
@@ -102,7 +101,7 @@ class SSHConnection (object):
         # Open a session.
         try:
             if self.debug:
-                logger.debug("Opening SSH channel on socket ({}:{})", self.host, self.port)
+                logger.debug("Opening SSH channel on socket (%s:%s)", self.host, str(self.port))
             self.chan = self.ssh.open_session()
         except:
             self.close()
@@ -115,7 +114,7 @@ class SSHConnection (object):
     def close (self):
         if hasattr(self, "chan") and self.chan:
             if self.debug:
-                logger.debug("Closing SSH channel on socket ({}:{})", self.host, self.port)
+                logger.debug("Closing SSH channel on socket (%s:%s)", self.host, str(self.port))
             self.chan.close()
             self.chan = None
         if hasattr(self, "ssh") and self.ssh:
@@ -137,7 +136,7 @@ class SSHConnection (object):
                         sshsock = entry[1]
                         entry[2] += 1
                         if debug:
-                            logger.debug("Incremented SSH socket use to {}", entry[2])
+                            logger.debug("Incremented SSH socket use to %s", str(entry[2]))
 
                         # Cancel any timeout for closing, only really need to do this on count == 1.
                         cls.cancel_close_socket_expire(sshsock, debug)
@@ -158,29 +157,32 @@ class SSHConnection (object):
                         ossock = socket.socket(af, socktype, proto)
                         ossock.connect(sa)
                         if attempt:
-                            logger.debug("Succeeded after {} attempts to : {}", attempt, addrinfo)
+                            logger.debug("Succeeded after %s attempts to : %s", str(attempt), str(addrinfo))
                         break
                     except socket.error as ex:
                         ossock = None
-                        logger.debug("Got socket error connecting to: {}: {}", addrinfo, ex)
+                        logger.debug("Got socket error connecting to: %s: %s", str(addrinfo), str(ex))
                         attempt += 1
                         error = ex
                         continue
                 else:
                     if error is not None:
-                        logger.debug("Got error connecting to: {}: {} (no addr)", addrinfo, error)
+                        logger.debug("Got error connecting to: %s: %s (no addr)", str(addrinfo), str(error))
                         raise error                             # pylint: disable=E0702
                     raise Exception("Couldn't connect to any resolution for {}:{}".format(host, port))
             except Exception as ex:
-                logger.error("Got unexpected socket error connecting to: {}:{}: {}", host, port, ex)
+                logger.error("Got unexpected socket error connecting to: %s:%s: %s",
+                             str(host),
+                             str(port),
+                             str(ex))
                 raise
 
             try:
                 if debug:
-                    logger.debug("Opening SSH socket to {}:{}", host, port)
+                    logger.debug("Opening SSH socket to %s:%s", str(host), str(port))
 
                 sshsock = ssh.Transport(ossock)
-                # self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                # self.ssh.set_missing_host_key_policy(ssh.AutoAddPolicy())
 
                 # XXX this takes an event so we could yield here to wait for event.
                 event = None
@@ -232,7 +234,7 @@ class SSHConnection (object):
                 return sshsock
             except ssh.AuthenticationException as error:
                 ossock.close()
-                logger.error("Authentication failed: {}", error)
+                logger.error("Authentication failed: %s", str(error))
                 raise
 
     @classmethod
@@ -243,7 +245,7 @@ class SSHConnection (object):
         if ssh_socket not in cls.ssh_socket_timeout:
             return
         if debug:
-            logger.debug("Canceling timer to release ssh socket: {}", ssh_socket)
+            logger.debug("Canceling timer to release ssh socket: %s", str(ssh_socket))
         timer = cls.ssh_socket_timeout[ssh_socket]
         del cls.ssh_socket_timeout[ssh_socket]
         timer.cancel()
@@ -259,7 +261,7 @@ class SSHConnection (object):
                 return
 
             if debug:
-                logger.debug("Timer expired, releasing ssh socket: {}", ssh_socket)
+                logger.debug("Timer expired, releasing ssh socket: %s", str(ssh_socket))
 
             # Remove any timeout
             del cls.ssh_socket_timeout[ssh_socket]
@@ -284,14 +286,14 @@ class SSHConnection (object):
             entry[2] -= 1
             if entry[2]:
                 if debug:
-                    logger.debug("Decremented SSH socket use to {}", entry[2])
+                    logger.debug("Decremented SSH socket use to %s", str(entry[2]))
                 return
 
             # We are all done with this socket
             # Setup a timer to actually close the socket.
             if ssh_socket not in cls.ssh_socket_timeout:
                 if debug:
-                    logger.debug("Setting up timer to release ssh socket: {}", ssh_socket)
+                    logger.debug("Setting up timer to release ssh socket: %s", str(ssh_socket))
                 cls.ssh_socket_timeout[ssh_socket] = threading.Timer(1, cls._close_socket_expire, [ssh_socket, debug])
                 cls.ssh_socket_timeout[ssh_socket].start()
 
@@ -307,7 +309,7 @@ class SSHConnection (object):
                 assert False
 
             if debug:
-                logger.debug("Closing SSH socket to {}", key)
+                logger.debug("Closing SSH socket to %s", str(key))
             if entry[1]:
                 entry[1].close()
                 entry[1] = None
@@ -316,8 +318,8 @@ class SSHConnection (object):
                 entry[0].close()
                 entry[0] = None
         except Exception as error:
-            logger.info("{}: Unexpected exception: {}: {}", cls, error, traceback.format_exc())
-            logger.error("{}: Unexpected error closing socket:  {}", cls, error)
+            logger.info("%s: Unexpected exception: %s: %s", str(cls), str(error), traceback.format_exc())
+            logger.error("%s: Unexpected error closing socket:  %s", str(cls), str(error))
         finally:
             del cls.ssh_socket_keys[ssh_socket]
             if entry:
@@ -664,7 +666,7 @@ class Host (object):
 
 
 def setup_module (unused):
-    global private_key
+    global private_key                                      # pylint: disable=W0603
     print("Setup called.")
     if 'USER' in os.environ:
         if os.environ['USER'] != "travis":

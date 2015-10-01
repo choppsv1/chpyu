@@ -17,7 +17,6 @@
 #
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
 import os
-import logbook
 import paramiko as ssh
 from chpyu.sshell import ShellCommand
 
