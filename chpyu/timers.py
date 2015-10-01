@@ -17,10 +17,8 @@
 #
 from __future__ import absolute_import, division, nested_scopes, print_function, unicode_literals
 import heapq
-import logbook
+import logging
 import random
-import pdb
-import sys
 import time
 import threading
 import functools
@@ -30,7 +28,7 @@ __version__ = '1.0'
 __docformat__ = "restructuredtext en"
 
 
-logger = logbook.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @functools.total_ordering
@@ -47,7 +45,7 @@ class Timer (object):
         try:
             self.action(*self.args, **self.kwargs)
         except Exception as ex:
-            logger.error("Ignoring uncaught exception within timer action: {}", ex)
+            logger.error("Ignoring uncaught exception within timer action: %s", str(ex))
 
     def __hash__ (self):
         return id(self)
@@ -157,7 +155,7 @@ class TimerHeap (object):
                     expired.expire = None
                     expired.run()
         except Exception as ex:
-            logger.error("Unexpected Exception: {}", ex)
+            logger.error("Unexpected Exception: %s", str(ex))
         finally:
             # This is never set while expiring is True
             assert self.rtimer is None
@@ -190,4 +188,3 @@ class TimerHeap (object):
                 return False
             else:
                 return True
-

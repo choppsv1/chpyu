@@ -16,14 +16,19 @@
 # limitations under the License.
 #
 from __future__ import absolute_import, division, unicode_literals, print_function, nested_scopes
+import logging
+import sys
 import time
-import logbook
 from chpyu.timers import Timer, TimerHeap
 
-logbook.StderrHandler().push_application()
-logger = logbook.Logger(__name__)
+
+logger = logging.getLogger(__name__)
 
 timer_heap = TimerHeap("Testing Timer Heap")
+
+
+def setup_module (unused):
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
 
 
 def test_simple_timer ():
@@ -74,20 +79,16 @@ def test_remove_timer ():
     assert "key1" not in test_dict
 
 
-def test_timer_uncaught_exception ():
+def test_timer_uncaught_exception (caplog):
     """Stop timer test"""
-
 
     def fail (arg):
         assert False
 
-    handler = logbook.TestHandler()
-    handler.push_application()
-    with handler.applicationbound():
-        timer = Timer(timer_heap, 0, fail, "key1")
-        timer.start(.1)
-        time.sleep(.2)
-        assert "assert False" in handler.formatted_records[0]
+    timer = Timer(timer_heap, 0, fail, "key1")
+    timer.start(.1)
+    time.sleep(.2)
+    assert "assert False" in caplog.text()
 
 
 def test_timer_comparison_coverage ():
@@ -128,7 +129,7 @@ def test_many_timers ():
             prevgen = test_dict[idx]
             firecount += 1
 
-    logger.info("Expired {} times for {} timers".format(firecount, NTIMERS))
+    logger.info("Expired %s times for %d timers", firecount, NTIMERS)
 
 
 __author__ = 'Christian Hopps'

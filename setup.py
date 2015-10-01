@@ -16,16 +16,12 @@
 # limitations under the License.
 from setuptools import setup
 
-# with open('requirements.txt') as f:
-#     required = f.read().splitlines()
 required = [
-    "pexpect>=3.3",
-    "Logbook>=0.6.1",
     "paramiko>=1.10.1",
 ]
 
 setup (name='chpyu',
-       version='1.0.3',
+       version='1.0.4',
        description='chopps python util library',
        author='Christian E. Hopps',
        author_email='chopps@gmail.com',
