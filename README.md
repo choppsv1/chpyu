@@ -1,10 +1,6 @@
 # CHPYU
 
-## chopps collection of useful python code.
+This project was split into 2 separate projects:
 
-The following modules are a collection of classes and functions
-that I've found useful in a variety of projects.
-
- * `sshell` - easy local or remote host command execution
- * `timers` - Efficient timers, allowing for thousands of timers using
-   a single timer thread. 
+ * `timers` - python package is timers
+ * `sshutil` - python package is sshutils
